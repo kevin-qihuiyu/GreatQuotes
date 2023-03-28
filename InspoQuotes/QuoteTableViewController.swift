@@ -35,13 +35,16 @@ class QuoteTableViewController: UITableViewController, SKPaymentTransactionObser
         super.viewDidLoad()
         
         SKPaymentQueue.default().add(self)
+        
+        if isPurchased() {
+            showPremiumQuotes()
+        }
     }
 
     // MARK: - Table view data source
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of rows
-        return quotesToShow.count + 1
+        return isPurchased() ? quotesToShow.count: (quotesToShow.count + 1)
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -50,6 +53,8 @@ class QuoteTableViewController: UITableViewController, SKPaymentTransactionObser
         if indexPath.row < quotesToShow.count {
             cell.textLabel?.numberOfLines = 0
             cell.textLabel?.text = quotesToShow[indexPath.row]
+            cell.textLabel?.textColor = UIColor.black
+            cell.accessoryType = .none
         } else {
             cell.textLabel?.text = "Get More Quotes"
             cell.textLabel?.textColor = UIColor.systemTeal
@@ -83,12 +88,29 @@ class QuoteTableViewController: UITableViewController, SKPaymentTransactionObser
         for transaction in transactions {
             if transaction.transactionState == .purchased {
                 print("Transaction successful!")
+                showPremiumQuotes()
+                
+                UserDefaults.standard.set(true, forKey: "productID")
+                
+                SKPaymentQueue.default().finishTransaction(transaction)
+                
             } else if transaction.transactionState == .failed {
-                print("Transaction failed!")
+                if let error = transaction.error {
+                    let errorDescription = error.localizedDescription
+                    print("Transaction failed du to error: \(errorDescription)")
+                }
             }
         }
     }
+    
+    func showPremiumQuotes() {
+        quotesToShow.append(contentsOf: premiumQuotes)
+        tableView.reloadData()
+    }
 
+    func isPurchased() -> Bool {
+        return UserDefaults.standard.bool(forKey: "productID")
+    }
     
     @IBAction func restorePressed(_ sender: UIBarButtonItem) {
         
